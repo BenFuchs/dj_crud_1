@@ -11,32 +11,41 @@ def index(request):
 def test(request):
     return Response({'test': 'success'})
 
-# @api_view(['GET'])
-# def get_students(request):
-#     student_list = Student.objects.all()
-#     serializer = StudentSerializer(student_list, many=True)
-#     return Response({'students': serializer.data})
-
-# def delete_student(request, student_id):
-#     # Perform any necessary actions (logging, etc.) here
-#     print(f"Deleting student with ID: {student_id}")
-    
-#     # Return a JSON response (optional)
-#     return Response({'message': f'Deleted student with ID {student_id}'})
-
-@api_view(['GET'])
+@api_view(['GET', 'POST', 'PUT','DELETE'])
 def students(request, id=-1):
-    if id == -1:
-        students = Student.objects.all()
-    else:
-        students = Student.objects.filter(id=id)
+    if request.method == 'GET':
+        if id == -1:
+            students = Student.objects.all()
+        else:
+            students = Student.objects.filter(id=id)
 
-    student_info = []
-    for student in students:
-        student_info.append({
-            'id': student.id,
-            'Name': student.sName,
-            'age': student.age
-        })
+        student_info = []
+        for student in students:
+            student_info.append({
+                'id': student.id,
+                'Name': student.sName,
+                'age': student.age
+            })
 
-    return Response({'students': student_info})
+        return Response({'students': student_info})
+    if request.method == 'POST':
+        Student.objects.create(sName = request.data['name'], age = request.data['age'])
+        return Response({"student added": request.data['name']})
+    
+    if request.method == 'PUT':
+        try:
+            student = Student.objects.get(id=id)
+            student.sName = request.data.get('name', student.sName)
+            student.age = request.data.get('age', student.age)
+            student.save()
+            return Response({"student updated": student.id})
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found"}, status=404)
+    
+    if request.method == 'DELETE':
+        try:
+            student = Student.objects.get(id=id)
+            student.delete()
+            return Response({"student deleted": id})
+        except Student.DoesNotExist:
+            return Response({"error": "Student not found"}, status=404)
